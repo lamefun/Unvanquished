@@ -64,14 +64,6 @@ class EntityClustering : Cluster::EuclideanClustering<gentity_t*, 3> {
 			return super::end();
 		}
 
-		inline iter_type cbegin() {
-			return super::cbegin();
-		}
-
-		inline iter_type cend() {
-			return super::cend();
-		}
-
 		/**
 		 * @brief An edge visibility check that checks for PVS visibility.
 		 */

@@ -30,44 +30,49 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
-#include <map>
-#include <set>
+#include <unordered_map>
+#include <unordered_set>
 
 /**
  * @brief A simple disjoint set container.
  */
-template<class ELEMENT> class DisjointSet {
+template<class Element> class DisjointSets {
 	public:
-		typedef std::set<ELEMENT> set_type;
-		typedef typename std::map<ELEMENT, set_type*>::const_iterator iter_type;
+		typedef std::unordered_set<Element> set_type;
+		typedef typename std::unordered_map<Element, set_type>::const_iterator iter_type;
 
-		DisjointSet() = default;
-
-		DisjointSet(const DisjointSet& other) {
-			for (auto pair : other.sets) {
-				sets.emplace(pair.first, new set_type(pair.second->begin(), pair.second->end()));
-			}
-			_size = other._size;
-		}
+		DisjointSets()
+		    : totalSize(0)
+		{}
 
 		/**
 		 * @brief Creates a new set with a single element. Careful: Does not enforce disjointness!
 		 * @return The representative element for the set, which happens to be the parameter.
 		 */
-		ELEMENT MakeSet(const ELEMENT x) {
-			set_type *newSet = new set_type();
-			newSet->insert(x);
-			sets.emplace(x, newSet);
-			_size++;
+		Element MakeSetFast(const Element x) {
+			sets.emplace(x, set_type{x});
+			totalSize++;
+			return x;
+		}
+
+		/**
+		 * @brief Creates a new set with a single element. Enforces disjointness.
+		 * @return The representative element for the set, which happens to be the parameter.
+		 */
+		Element MakeSetSecure(const Element x) {
+			if (Find(x) == nullptr) {
+				sets.emplace(x, set_type{x});
+				totalSize++;
+			}
 			return x;
 		}
 
 		/**
 		 * @return The representative of the set containing x or nullptr.
 		 */
-		ELEMENT Find(const ELEMENT x) const {
+		Element Find(const Element x) const {
 			for (auto pair : sets) {
-				if (pair.second->find(x) != pair.second->end()) {
+				if (pair.second.find(x) != pair.second.end()) {
 					return pair.first;
 				}
 			}
@@ -78,15 +83,14 @@ template<class ELEMENT> class DisjointSet {
 		 * @brief Unites the sets represented by x and y. The new representative is x.
 		 * @return The new representative.
 		 */
-		ELEMENT Link(const ELEMENT x, const ELEMENT y) {
+		Element Link(const Element x, const Element y) {
 			if (x != y) {
-				set_type *xSet = sets.at(x);
-				set_type *ySet = sets.at(y);
-				_size -= xSet->size() + ySet->size();
-				xSet->insert(ySet->cbegin(), ySet->cend());
+				set_type& xSet = sets.at(x);
+				set_type& ySet = sets.at(y);
+				totalSize -= xSet.size() + ySet.size();
+				xSet.insert(ySet.begin(), ySet.end());
 				sets.erase(y);
-				delete ySet;
-				_size += xSet->size();
+				totalSize += xSet.size();
 			}
 			return x;
 		}
@@ -95,32 +99,24 @@ template<class ELEMENT> class DisjointSet {
 		 * @brief Finds the representative elements and unites their sets.
 		 *        The same as Link(Find(x), Find(y)).
 		 */
-		inline void Union(const ELEMENT x, const ELEMENT y) {
+		void Union(const Element x, const Element y) {
 			Link(Find(x), Find(y));
 		}
 
 		/**
 		 * @return Whether the elements are in the same set.
 		 */
-		bool Connected(const ELEMENT x, const ELEMENT y) {
-			ELEMENT xRepresentative = Find(x);
+		bool Connected(const Element x, const Element y) {
+			Element& xRepresentative = Find(x);
 			return (xRepresentative == Find(y) && xRepresentative != nullptr);
 		}
 
-		inline const iter_type begin() const {
-			return sets.cbegin();
+		const iter_type begin() const {
+			return sets.begin();
 		}
 
-		inline const iter_type cbegin() const {
-			return sets.cbegin();
-		}
-
-		inline const iter_type end() const {
-			return sets.cend();
-		}
-
-		inline const iter_type cend() const {
-			return sets.cend();
+		const iter_type end() const {
+			return sets.end();
 		}
 
 		/**
@@ -134,10 +130,10 @@ template<class ELEMENT> class DisjointSet {
 		 * @return The total amount of elements stored.
 		 */
 		std::size_t TotalSize() {
-			return _size;
+			return totalSize;
 		}
 
 	protected:
-		std::map<ELEMENT, set_type*> sets;
-		std::size_t _size;
+		std::unordered_map<Element, set_type> sets;
+		std::size_t totalSize;
 };

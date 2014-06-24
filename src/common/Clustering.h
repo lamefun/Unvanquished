@@ -189,14 +189,6 @@ namespace Cluster {
 				return records.end();
 			}
 
-			inline iter_type cbegin() const noexcept {
-				return records.cbegin();
-			}
-
-			inline iter_type cend() const noexcept {
-				return records.cend();
-			}
-
 			inline iter_type find(const DATA &key) const {
 				return records.find(key);
 			}
@@ -394,22 +386,14 @@ namespace Cluster {
 				dirtyClusters = true;
 			}
 
-			iter_type cbegin() {
+			iter_type begin() {
 				if (dirtyMST || dirtyClusters) GenerateClusters();
-				return clusters.cbegin();
+				return clusters.begin();
 			}
 
-			iter_type cend() {
+			iter_type end() {
 				if (dirtyMST || dirtyClusters) GenerateClusters();
-				return clusters.cend();
-			}
-
-			inline iter_type begin() {
-				return cbegin();
-			}
-
-			inline iter_type end() {
-				return cend();
+				return clusters.end();
 			}
 
 		private:
@@ -426,7 +410,7 @@ namespace Cluster {
 				mstStandardDeviation = 0;
 
 				// Track connected components for circle prevention.
-				DisjointSet<DATA> components = DisjointSet<DATA>();
+				DisjointSets<DATA> components = DisjointSets<DATA>();
 
 				// The edges are implicitely sorted by distance, iterate in ascending order.
 				for (edge_record_type edgeRecord : edges) {
@@ -442,10 +426,10 @@ namespace Cluster {
 
 					// Otheriwse add vertices to new components.
 					if (firstVertexRepr == nullptr) {
-						firstVertexRepr = components.MakeSet(edge->first);
+						firstVertexRepr = components.MakeSetFast(edge->first);
 					}
 					if (secondVertexRepr == nullptr) {
-						secondVertexRepr = components.MakeSet(edge->second);
+						secondVertexRepr = components.MakeSetFast(edge->second);
 					}
 
 					// Don't create circles.
@@ -507,7 +491,7 @@ namespace Cluster {
 				}
 
 				// Retreive the connected components, excluding isolated vertices.
-				DisjointSet<DATA> components = DisjointSet<DATA>();
+				DisjointSets<DATA> components = DisjointSets<DATA>();
 				for (edge_record_type edgeRecord : forestEdges) {
 					edge_type *edge = &edgeRecord.second;
 
@@ -517,10 +501,10 @@ namespace Cluster {
 
 					// Otheriwse add vertices to new components.
 					if (firstVertexRepr == nullptr) {
-						firstVertexRepr = components.MakeSet(edge->first);
+						firstVertexRepr = components.MakeSetFast(edge->first);
 					}
 					if (secondVertexRepr == nullptr) {
-						secondVertexRepr = components.MakeSet(edge->second);
+						secondVertexRepr = components.MakeSetFast(edge->second);
 					}
 
 					// Mark components as connected.
@@ -536,7 +520,7 @@ namespace Cluster {
 				// Build a cluster for each connected component, excluding isolated vertices.
 				for (auto component : components) {
 					cluster_type *newCluster = new cluster_type();
-					for (DATA vertex : *component.second) {
+					for (DATA vertex : component.second) {
 						newCluster->Update(vertex, records[vertex]);
 						remainingVertices.erase(vertex);
 					}
